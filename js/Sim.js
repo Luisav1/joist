@@ -60,6 +60,9 @@ define( function( require ) {
    */
   function Sim( name, screens, options ) {
 
+    // call init early on so the students get to see the phet splash screen
+    window.LOLSDK.init( 'edu.phet.' + packageJSON.name );
+
     var self = this;
 
     var tandem = Tandem.createRootTandem();
@@ -190,6 +193,22 @@ define( function( require ) {
     // @public (joist-internal, read-only) - {Screen|null} - The current screen, or null if showing the home screen
     this.currentScreenProperty = new Property( null );
 
+    var progress = {
+      currentProgress: 0,
+      maximumProgress: 8,
+      score: 0
+    };
+
+    this.currentScreenProperty.link( function() {
+      var oldProgress = progress.currentProgress;
+      progress.currentProgress = Math.min( progress.currentProgress + 1, progress.maximumProgress );
+      progress.score++;
+      if ( oldProgress !== progress.currentProgress ) {
+        window.LOLSDK.submitProgress( progress );
+        console.log( JSON.stringify( progress ) );
+      }
+    } );
+
     // Many other components use addInstance at the end of their constructor but in this case we must register early
     // to (a) enable the SimIFrameAPI as soon as possible and (b) to enable subsequent component registrations,
     // which require the sim to be registered
@@ -308,6 +327,14 @@ define( function( require ) {
     // When the sim is inactive, make it non-interactive, see https://github.com/phetsims/scenery/issues/414
     this.activeProperty.link( function( active ) {
       self.display.interactive = active;
+    } );
+
+    window.LOLSDK.addLifecycleListener( function() {
+      self.activeProperty.value = false;
+      console.log('set active false');
+    }, function() {
+      self.activeProperty.value = true;
+      console.log('set active true');
     } );
 
     var simDiv = self.display.domElement;

@@ -283,6 +283,19 @@ define( function( require ) {
         tandem: tandem.createTandem( 'aboutMenuItem' ),
         tagName: 'button',
         focusAfterCallback: true
+      },
+
+      //About dialog button
+      {
+        text: 'Done',
+        present: true,
+        separatorBefore: true,
+        callback: function() {
+          window.LOLSDK.completeGame();
+          console.log('called LOLSDK.complete game');
+        },
+        tandem: tandem.createTandem( 'doneButton' ),
+        tagName: 'button'
       }
     ];
 
