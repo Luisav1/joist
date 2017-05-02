@@ -60,9 +60,6 @@ define( function( require ) {
    */
   function Sim( name, screens, options ) {
 
-    // call init early on so the students get to see the phet splash screen
-    window.LOLSDK.init( 'edu.phet.' + packageJSON.name );
-
     var self = this;
 
     var tandem = Tandem.createRootTandem();
@@ -193,22 +190,6 @@ define( function( require ) {
     // @public (joist-internal, read-only) - {Screen|null} - The current screen, or null if showing the home screen
     this.currentScreenProperty = new Property( null );
 
-    var progress = {
-      currentProgress: 0,
-      maximumProgress: 8,
-      score: 0
-    };
-
-    this.currentScreenProperty.link( function() {
-      var oldProgress = progress.currentProgress;
-      progress.currentProgress = Math.min( progress.currentProgress + 1, progress.maximumProgress );
-      progress.score++;
-      if ( oldProgress !== progress.currentProgress ) {
-        window.LOLSDK.submitProgress( progress );
-        console.log( JSON.stringify( progress ) );
-      }
-    } );
-
     // Many other components use addInstance at the end of their constructor but in this case we must register early
     // to (a) enable the SimIFrameAPI as soon as possible and (b) to enable subsequent component registrations,
     // which require the sim to be registered
@@ -329,13 +310,16 @@ define( function( require ) {
       self.display.interactive = active;
     } );
 
-    window.LOLSDK.addLifecycleListener( function() {
-      self.activeProperty.value = false;
-      console.log('set active false');
-    }, function() {
-      self.activeProperty.value = true;
-      console.log('set active true');
-    } );
+    // register for messages from LoL platform
+    window.phet.chipper.queryParameters.legendsOfLearning && window.addEventListener( 'message', function( message ) {
+        if ( message.data.messageName === 'pause' ) {
+          self.activeProperty.value = false;
+        }
+        if ( message.data.messageName === 'resume' ) {
+          self.activeProperty.value = true;
+        }
+      }
+    );
 
     var simDiv = self.display.domElement;
     simDiv.id = 'sim';
@@ -513,6 +497,11 @@ define( function( require ) {
       // this.  If PhET-iO sets phet.joist.playbackMode to be true, the sim clock won't run and instead
       // the sim will receive dt events from stepSimulation calls.
       this.boundRunAnimationLoop = phet.joist.playbackMode ? function() {} : this.runAnimationLoop.bind( this );
+
+      // LOL integration, let them know we started up.
+      phet.chipper.queryParameters.legendsOfLearning && window.parent && window.parent.postMessage( {
+        message: 'init'
+      }, '*' );
     },
 
     /*
