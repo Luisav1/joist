@@ -41,20 +41,23 @@ define( function( require ) {
    * @param {string} credits - The credits for the simulation, or falsy to show no credits
    * @param {Brand} Brand
    * @param {string} locale - The locale string
+   * @param {Node} phetButton - The PhET button in the navigation bar, receives focus when this dialog is closed
    * @param {Tandem} tandem
    * @constructor
    */
-  function AboutDialog( name, version, credits, Brand, locale, tandem ) {
+  function AboutDialog( name, version, credits, Brand, locale, phetButton, tandem ) {
     var self = this;
     this.aboutDialogTandem = tandem;
 
     var children = [];
-    children.push( new Text( name, {
+
+    var titleText = new Text( name, { 
       font: new PhetFont( 28 ),
       maxWidth: MAX_WIDTH,
       tagName: 'h1',
       accessibleLabel: name
-    } ) );
+    } );
+    children.push( titleText );
 
     var versionString = StringUtils.format( versionPatternString, version );
     children.push( new Text( versionString, {
@@ -89,11 +92,12 @@ define( function( require ) {
         outOfDateNode.visible = state === 'out-of-date';
         offlineNode.visible = state === 'offline';
 
-        // a11y - make update content visible/invisible for screen readers
-        checkingNode.accessibleHidden = !checkingNode.visible;
-        upToDateNode.accessibleHidden = !upToDateNode.visible;
-        outOfDateNode.accessibleHidden = !outOfDateNode.visible;
-        offlineNode.accessibleHidden = !offlineNode.visible;
+        // a11y - make update content visible/invisible for screen readers by explicitly removing content
+        // from the DOM, necessary because AT will ready hidden content in a Dialog.
+        checkingNode.accessibleContentDisplayed = checkingNode.visible;
+        upToDateNode.accessibleContentDisplayed = upToDateNode.visible;
+        outOfDateNode.accessibleContentDisplayed = outOfDateNode.visible;
+        offlineNode.accessibleContentDisplayed = offlineNode.visible;
       };
 
       children.push( new Node( {
@@ -137,7 +141,7 @@ define( function( require ) {
 
         // a11y
         tagName: 'p',
-        accessibleLabel: Brand.copyright
+        accessibleLabel: copyright
       } ) );
     }
 
@@ -188,7 +192,13 @@ define( function( require ) {
     Dialog.call( this, content, {
       modal: true,
       hasCloseButton: true,
-      tandem: tandem.createSupertypeTandem()
+      tandem: tandem.createSupertypeTandem(),
+      focusOnCloseNode: phetButton,
+      xMargin: 25,
+      yMargin: 25,
+
+      // a11y - label association so the title is read when focus enters the Dialog
+      ariaLabelledByElement: titleText.domElement
     } );
 
     // close it on a click

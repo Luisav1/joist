@@ -217,7 +217,8 @@ define( function( require ) {
           return state === 'out-of-date' ? '#0a0' : '#000';
         } ),
         callback: function() {
-          new UpdateDialog().show();
+          var phetButton = sim.navigationBar.phetButton;
+          new UpdateDialog( phetButton ).show();
         },
         tandem: tandem.createTandem( 'getUpdateMenuItem' ),
 
@@ -278,7 +279,8 @@ define( function( require ) {
         present: true,
         separatorBefore: isPhETBrand,
         callback: function() {
-          new AboutDialog( sim.name, sim.version, sim.credits, Brand, sim.locale, tandem.createTandem( 'aboutDialog' ) ).show();
+          var phetButton = sim.navigationBar.phetButton;
+          new AboutDialog( sim.name, sim.version, sim.credits, Brand, sim.locale, phetButton, tandem.createTandem( 'aboutDialog' ) ).show();
         },
         tandem: tandem.createTandem( 'aboutMenuItem' ),
         tagName: 'button',
@@ -375,15 +377,18 @@ define( function( require ) {
         var firstItem = self.items[ 0 ];
         var lastItem = self.items[ self.items.length - 1 ];
 
-        if ( event.keyCode === Input.KEY_DOWN_ARROW ) {
+        // this attempts to prevents the scren reader's virtual cursor from also moving with the arrow keys
+        if ( Input.isArrowKey( event.keyCode ) ) {
           event.preventDefault();
+        }
+
+        if ( event.keyCode === Input.KEY_DOWN_ARROW ) {
 
           // On down arrow, focus next item in the list, or wrap up to the first item if focus is at the end
           var nextFocusable = lastItem.focussed ? firstItem : AccessibilityUtil.getNextFocusable();
           nextFocusable.focus();
         }
         else if ( event.keyCode === Input.KEY_UP_ARROW ) {
-          event.preventDefault();
 
           // On up arow, focus previous item in the list, or wrap back to the last item if focus is on first item
           var previousFocusable = firstItem.focussed ? lastItem : AccessibilityUtil.getPreviousFocusable();
@@ -432,6 +437,9 @@ define( function( require ) {
       if ( !this.isShowing ) {
         window.phet.joist.sim.showPopup( this, true );
         this.isShowing = true;
+
+        // make sure that any previously focused elements no longer have focus
+        document.activeElement && document.activeElement.blur();
       }
     },
 

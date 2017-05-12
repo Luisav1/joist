@@ -59,7 +59,8 @@ define( function( require ) {
 
       // a11y options
       tagName: 'div',
-      ariaRole: 'dialog'
+      ariaRole: 'dialog',
+      focusOnCloseNode: null // {Node} receives focus on close, if null focus returns to element that had focus on open
     }, options );
 
     // @private (read-only)
@@ -123,6 +124,9 @@ define( function( require ) {
         listener: function() { 
           self.hide();
         },
+        accessibleFire: function() {
+          self.focusActiveElement();
+        },
         tandem: closeButtonTandem,
 
         // a11y options
@@ -171,34 +175,25 @@ define( function( require ) {
       options.title.domElement && this.setAriaLabelledByElement( options.title.domElement );
     }
 
-    // @private (a11y) - the active element when the dialog is shown, tracked so that focus can be restored on hidden
-    this.activeElement = null;
-
-    var clickListener;
-    var escapeListener;
+    // @private (a11y) - the active element when the dialog is shown, tracked so that focus can be restored on close
+    this.activeElement = options.focusOnCloseNode || null;
 
     // @private - add the input listeners for accessibility when the dialog is shown
     // the listeners must be added when shown because all listeners are removed
     // when the dialog is hidden
+    var escapeListener;
     this.addAccessibleInputListeners = function() {
 
       // close the dialog when the user presses 'escape'
       escapeListener = this.addAccessibleInputListener( {
         keydown: function( event ) {
           if ( event.keyCode === Input.KEY_ESCAPE ) {
+            event.preventDefault();
             self.hide();
+            self.focusActiveElement();
           }
         }
       } );
-
-      // close the dialog when the button is pressed by the keyboard
-      if ( options.hasCloseButton ) {
-        clickListener = closeButton.addAccessibleInputListener( {
-          click: function() {
-            self.hide();
-          }
-        } );
-      }
     };
 
     // @private - remove listeners so that the dialog is eligible for garbage collection
@@ -208,7 +203,6 @@ define( function( require ) {
       self.removeAccessibleInputListener( escapeListener );
 
       if ( options.hasCloseButton ) {
-        closeButton.removeAccessibleInputListener( clickListener );
         closeButtonTandem && closeButtonTandem.removeInstance( closeButton );
       }
     };
@@ -235,11 +229,12 @@ define( function( require ) {
         // a11y - add the listeners that will close the dialog on 
         this.addAccessibleInputListeners();
 
+        // a11y - store the currently active element, set before hiding views so that document.activeElement
+        // isn't blurred
+        this.activeElement = this.activeElement || document.activeElement;
+
         // a11y - hide all ScreenView content from assistive technology when the dialog is shown
         this.setAccessibleViewsHidden( true );
-
-        // a11y - store the currently active element
-        this.activeElement = document.activeElement;
 
         // In case the window size has changed since the dialog was hidden, we should try layout out again.
         // See https://github.com/phetsims/joist/issues/362
@@ -259,21 +254,22 @@ define( function( require ) {
         // a11y - when the dialog is hidden, unhide all ScreenView content from assistive technology
         this.setAccessibleViewsHidden( false );
 
-        // a11y - restore focus to the active element
-        this.activeElement && this.activeElement.focus();
       }
     },
 
     /**
-     * Hide or show all accessible content related to the sim ScreenViews, navigation bar, and alert content.
+     * Hide or show all accessible content related to the sim ScreenViews, navigation bar, and alert content. Instead
+     * of using setHidden, we have to remove the subtree of accessible content from each view element in order to
+     * prevent an IE11 bug where content remains invisible in the accessibility tree, see
+     * https://github.com/phetsims/john-travoltage/issues/247
      * 
      * @param {boolean} hidden
      */
     setAccessibleViewsHidden: function( hidden ) {
       for ( var i = 0; i < this.sim.screens.length; i++ ) {
-        this.sim.screens[ i ].view.accessibleHidden = hidden;
+        this.sim.screens[ i ].view.accessibleContentDisplayed = !hidden;
       }
-      this.sim.navigationBar.accessibleHidden = hidden;
+      this.sim.navigationBar.accessibleContentDisplayed = !hidden;
 
       // workaround for a strange Edge bug where this child of the navigation bar remains hidden,
       // see https://github.com/phetsims/a11y-research/issues/30
@@ -281,6 +277,16 @@ define( function( require ) {
 
       // clear the aria-live alert content from the DOM
       AriaHerald.clearAll();
+    },
+
+    /**
+     * If there is an active element, focus it.  Should almost always be closed after the Dialog has been closed.
+     * 
+     * @public
+     * @a11y
+     */
+    focusActiveElement: function() {
+      this.activeElement && this.activeElement.focus();
     }
   } );
 } );

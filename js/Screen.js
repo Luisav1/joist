@@ -24,6 +24,9 @@ define( function( require ) {
   var Tandem = require( 'TANDEM/Tandem' );
   var TScreen = require( 'JOIST/TScreen' );
 
+  // phet-io modules
+  var TBoolean = require( 'ifphetio!PHET_IO/types/TBoolean' );
+
   // constants
   var MINIMUM_HOME_SCREEN_ICON_SIZE = new Dimension2( 548, 373 );
   var MINIMUM_NAVBAR_ICON_SIZE = new Dimension2( 147, 100 );
@@ -37,7 +40,7 @@ define( function( require ) {
 
   /**
    * @param {function} createModel
-   * @param {function} createView
+   * @param {function:Object } createView - function( model )
    * @param {Object} [options]
    * @constructor
    */
@@ -97,6 +100,20 @@ define( function( require ) {
     // b) showing a loading progress bar <not implemented>
     this._model = null; // @private
     this._view = null;  // @private
+
+    // @public {Property.<boolean>} indicates whether the Screen is active. Clients can read this, joist sets it.
+    // To prevent potential visual glitches, the value should change only while the screen's view is invisible.
+    // That is: transitions from false to true before a Screen becomes visible, and from true to false after a Screen becomes invisible.
+    this.activeProperty = new Property( false, {
+      tandem: options.tandem.createTandem( 'activeProperty' ),
+      phetioValueType: TBoolean,
+      phetioInstanceDocumentation: 'this Property is read-only, do not attempt to set its value'
+    } );
+    var self = this;
+    assert && this.activeProperty.lazyLink( function( isActive ) {
+      assert( self._view, 'isActive should not change before the Screen view has been initialized' );
+      assert( !self._view.isVisible(), 'isActive should not change while the Screen view is visible' );
+    } );
 
     options.tandem.addInstance( this, TScreen );
   }
@@ -189,6 +206,7 @@ define( function( require ) {
     initializeView: function() {
       assert && assert( this._view === null, 'there was already a view' );
       this._view = this.createView( this.model );
+      this._view.setVisible( false ); // a Screen is invisible until selected
 
       // Show the home screen's layoutBounds
       if ( phet.chipper.queryParameters.dev ) {
