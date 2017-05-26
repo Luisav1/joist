@@ -514,11 +514,6 @@ define( function( require ) {
       // this.  If PhET-iO sets phet.joist.playbackMode to be true, the sim clock won't run and instead
       // the sim will receive dt events from stepSimulation calls.
       this.boundRunAnimationLoop = phet.joist.playbackMode ? function() {} : this.runAnimationLoop.bind( this );
-
-      // LOL integration, let them know we started up.
-      phet.chipper.queryParameters.legendsOfLearning && window.parent && window.parent.postMessage( {
-        message: 'init'
-      }, '*' );
     },
 
     /*
@@ -683,6 +678,11 @@ define( function( require ) {
 
                 // Signify the end of simulation startup.  Used by PhET-iO.
                 self.endedSimConstructionEmitter.emit();
+
+                // LOL integration, let them know we started up.
+                phet.chipper.queryParameters.legendsOfLearning && window.parent && window.parent.postMessage( {
+                  message: 'init'
+                }, '*' );
               }, 25 ); // pause for a few milliseconds with the progress bar filled in before going to the home screen
             }
           },
