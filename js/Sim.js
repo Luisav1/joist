@@ -37,6 +37,7 @@ define( function( require ) {
   var Tandem = require( 'TANDEM/Tandem' );
   var DotUtil = require( 'DOT/Util' );// eslint-disable-line
   var Emitter = require( 'AXON/Emitter' );
+  var PostMessageAPI = require( 'JOIST/PostMessageAPI' );
   var TandemEmitter = require( 'TANDEM/axon/TandemEmitter' );
   var TSim = require( 'JOIST/TSim' );
 
@@ -679,7 +680,9 @@ define( function( require ) {
                 // Signify the end of simulation startup.  Used by PhET-iO.
                 self.endedSimConstructionEmitter.emit();
 
-                // LOL integration, let them know we started up.
+                // if there is a parent window, set up the PostMessageAPI to listen to messages from other frames
+                if ( window.parent ) { self.postMessageAPI = new PostMessageAPI( self ); }
+
                 phet.chipper.queryParameters.legendsOfLearning && window.parent && window.parent.postMessage( {
                   message: 'init'
                 }, '*' );
