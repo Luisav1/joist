@@ -120,9 +120,10 @@ define( function( require ) {
       self.homeScreen && self.homeScreen.view.layout( width, screenHeight );
 
       // Fixes problems where the div would be way off center on iOS7
-      if ( platform.mobileSafari ) {
-        window.scrollTo( 0, 0 );
-      }
+      // NOTE: But it interferes with native pinch to zoom because it scrolls while user tries to zoom in
+      // if ( platform.mobileSafari ) {
+      //   window.scrollTo( 0, 0 );
+      // }
 
       // update our scale and bounds properties after other changes (so listeners can be fired after screens are resized)
       this.scaleProperty.value = scale;
@@ -475,10 +476,11 @@ define( function( require ) {
       };
     }
 
-    var $body = $( 'body' );
+    // var $body = $( 'body' );
 
     // prevent scrollbars
-    $body.css( 'padding', '0' ).css( 'margin', '0' ).css( 'overflow', 'hidden' );
+    // NOTE: For native zoom, we likely want scrollbars as they indicate a way to pan
+    // $body.css( 'padding', '0' ).css( 'margin', '0' ).css( 'overflow', 'hidden' );
 
     // check to see if the sim div already exists in the DOM under the body. This is the case for https://github.com/phetsims/scenery/issues/174 (iOS offline reading list)
     if ( document.getElementById( 'sim' ) && document.getElementById( 'sim' ).parentNode === document.body ) {
@@ -700,12 +702,22 @@ define( function( require ) {
       // Fit to the window and render the initial scene
       // Can't synchronously do this in Firefox, see https://github.com/phetsims/vegas/issues/55 and
       // https://bugzilla.mozilla.org/show_bug.cgi?id=840412.
-      $( window ).resize( function() {
+      // NOTE: Resize event is fired when the window changes size AND on browser zoom change. Disable so that we 
+      // can see how the browser natively handles zoom and magnify.
+      // But this identifies that sim layout will need to change with native zoom and magnify.
+      //  - There is no way to get or set the browser zoom level with javascript.
+      //  - Window resize and zoom both trigger the DOM 'resize' event. How do we fit sim to browser window on sim
+      //  resize while also supporting native zoom? We will probably no longer fit the sim to the window, and
+      //  instead show scroll bars on sim load if it is off screen.
+      //  - On load, the browser keeps zoom level. We can't determine what the zoom level is with javascript so 
+      //  we rescale the sim to fit within current dimensions of the window screen. So at max browser zoom, sim can
+      //  look like it is not zoomed at all on load. And since we are at the 
+      $( window ).resize( function( event ) {
 
         // Don't resize on window size changes if we are playing back input events.
         // See https://github.com/phetsims/joist/issues/37
         if ( !phet.joist.playbackModeEnabledProperty.value ) {
-          self.resizePending = true;
+          // self.resizePending = true;
         }
       } );
       this.resizeToWindow();
