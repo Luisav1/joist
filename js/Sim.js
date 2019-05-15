@@ -40,6 +40,7 @@ define( function( require ) {
   var NumberIO = require( 'TANDEM/types/NumberIO' );
   var NumberProperty = require( 'AXON/NumberProperty' );
   var ObservableArray = require( 'AXON/ObservableArray' );
+  var PanZoomListener = require( 'SCENERY/listeners/PanZoomListener' );
   var packageJSON = require( 'JOIST/packageJSON' );
   var platform = require( 'PHET_CORE/platform' );
   var Profiler = require( 'JOIST/Profiler' );
@@ -140,6 +141,11 @@ define( function( require ) {
       this.scaleProperty.value = scale;
       this.boundsProperty.value = new Bounds2( 0, 0, width, height );
       this.screenBoundsProperty.value = new Bounds2( 0, 0, width, screenHeight );
+
+      // set the background rectangle dimensions that will catch pan/zoom input
+      this.simulationRoot.setRect( 0, 0, width, height );
+      this.panZoomListener.targetBounds = this.boundsProperty.value;
+      this.panZoomListener.panBounds = this.boundsProperty.value;
     }, {
       tandem: Tandem.generalTandem.createTandem( 'resizedAction' ),
       phetioType: ActionIO( [
@@ -500,8 +506,13 @@ define( function( require ) {
     // Prevents selection cursor issues in Safari, see https://github.com/phetsims/scenery/issues/476
     document.onselectstart = function() { return false; };
 
-    // @public
+    // @public - root for the sim Display
     this.rootNode = new Node( { renderer: options.rootRenderer } );
+
+    // root for the simulation Nodes, a rectangle that is sized on resize() to fill the entire display and capture
+    // pan/zoom input events
+    this.simulationRoot = new phet.scenery.Rectangle(0, 0, 0, 0 );
+    this.rootNode.addChild( this.simulationRoot );
 
     // @private
     this.display = new Display( self.rootNode, {
@@ -516,6 +527,10 @@ define( function( require ) {
       assumeFullWindow: true, // a bit faster if we can assume no coordinate translations are needed for the display.
       allowBackingScaleAntialiasing: options.allowBackingScaleAntialiasing
     } );
+
+    // @private
+    this.panZoomListener = new PanZoomListener( this.simulationRoot, Bounds2.EVERYTHING );
+    this.simulationRoot.addInputListener( this.panZoomListener );
 
     // Seeding by default a random value for reproducable fuzzes if desired
     var fuzzerSeed = phet.chipper.queryParameters.randomSeed * Math.PI;
@@ -650,13 +665,13 @@ define( function( require ) {
       // When moving from a screen to the homescreen, the previous screen should be highlighted
 
       if ( this.homeScreen ) {
-        this.rootNode.addChild( this.homeScreen.view );
+        this.simulationRoot.addChild( this.homeScreen.view );
       }
       _.each( screens, function( screen ) {
         screen.view.layerSplit = true;
-        self.rootNode.addChild( screen.view );
+        self.simulationRoot.addChild( screen.view );
       } );
-      this.rootNode.addChild( this.navigationBar );
+      this.simulationRoot.addChild( this.navigationBar );
 
       Property.multilink( [ this.showHomeScreenProperty, this.screenIndexProperty ],
         function( showHomeScreen, screenIndex ) {
@@ -692,7 +707,7 @@ define( function( require ) {
 
       // layer for popups, dialogs, and their backgrounds and barriers
       this.topLayer = new Node();
-      this.rootNode.addChild( this.topLayer );
+      this.simulationRoot.addChild( this.topLayer );
 
       // @private list of nodes that are "modal" and hence block input with the barrierRectangle.  Used by modal dialogs
       // and the PhetMenu
