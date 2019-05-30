@@ -40,19 +40,26 @@ define( function( require ) {
       this.verticalScrollBarTrack = new Rectangle( 0, 0, 0, 0, trackOptions );
       this.verticalScrollBar = new Rectangle( 0, 0, 0, 0, barOptions );
 
+      const trackConnector = new Rectangle( 0, 0, BAR_WIDTH, BAR_WIDTH, {
+        fill: PhetColorScheme.PHET_LOGO_BLUE
+      } );
+
       this.addChild( this.horizontalScrollBarTrack );
       this.addChild( this.horizontalScrollBar );
 
       this.addChild( this.verticalScrollBarTrack );
       this.addChild( this.verticalScrollBar );
 
+      this.addChild( trackConnector );
+
       this.controlsVisibleProperty = new DerivedProperty( [ panZoomListener.magnificationProperty ], ( magnification ) => {
-        return magnification < 1;
+        return magnification > 1;
       } );
 
       Property.multilink( [ boundsProperty, panZoomListener.horizontalScrollProperty, panZoomListener.relativeWidthVisibleProperty ], ( bounds, scroll, relativeWidth ) => {
         if ( bounds !== null ) {
           this.horizontalScrollBarTrack.setRect( 0, bounds.height - BAR_WIDTH, bounds.width - BAR_WIDTH, BAR_WIDTH );
+          trackConnector.leftCenter = this.horizontalScrollBarTrack.rightCenter;
 
           const horizontalBarWidth = this.horizontalScrollBarTrack.getWidth() * relativeWidth;
           this.horizontalScrollBar.setRect( 0, 0, horizontalBarWidth, BAR_WIDTH );
@@ -65,6 +72,7 @@ define( function( require ) {
       Property.multilink( [ boundsProperty, panZoomListener.verticalScrollProperty, panZoomListener.relativeHeightVisibleProperty ], ( bounds, scroll, relativeHeight ) => {
         if ( bounds !== null ) {
           this.verticalScrollBarTrack.setRect( bounds.width - BAR_WIDTH, 0, BAR_WIDTH, bounds.height - BAR_WIDTH );
+          trackConnector.centerTop = this.verticalScrollBarTrack.centerBottom;
 
           const verticalBarHeight = this.verticalScrollBarTrack.getHeight() * relativeHeight;
           this.verticalScrollBar.setRect( 0, 0, BAR_WIDTH, verticalBarHeight );
@@ -74,9 +82,9 @@ define( function( require ) {
         }
       } );
 
-      // this.controlsVisibleProperty.link( ( controlsVisible ) => {
-
-      // } );
+      this.controlsVisibleProperty.link( ( controlsVisible ) => {
+        this.visible = controlsVisible;
+      } );
 
       // button panel
       const zoomInButton = new ZoomButton( {
