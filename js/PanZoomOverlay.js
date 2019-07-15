@@ -1,6 +1,9 @@
 // Copyright 2019, University of Colorado Boulder
 
 /**
+ * A prototype overlay with scroll bars and UI buttons that allow one to zoom in to a Node with a panZoomListener.
+ * Prototypal, do not use this. For https://github.com/phetsims/joist/issues/563
+ * 
  * @author Jesse Greenberg
  */
 define( function( require ) {

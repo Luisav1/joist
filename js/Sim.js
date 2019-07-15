@@ -41,7 +41,6 @@ define( function( require ) {
   var NumberProperty = require( 'AXON/NumberProperty' );
   var ObservableArray = require( 'AXON/ObservableArray' );
   var PanZoomListener = require( 'SCENERY/listeners/PanZoomListener' );
-  var PanZoomOverlay = require( 'JOIST/PanZoomOverlay' );
   var packageJSON = require( 'JOIST/packageJSON' );
   var platform = require( 'PHET_CORE/platform' );
   var Profiler = require( 'JOIST/Profiler' );
@@ -532,9 +531,6 @@ define( function( require ) {
     // @private
     this.panZoomListener = new PanZoomListener( this.simulationRoot, Bounds2.EVERYTHING );
     this.simulationRoot.addInputListener( this.panZoomListener );
-
-    const panZoomOverlay = new PanZoomOverlay( this.panZoomListener, this.boundsProperty );
-    this.rootNode.addChild( panZoomOverlay );
 
     // Seeding by default a random value for reproducable fuzzes if desired
     var fuzzerSeed = phet.chipper.queryParameters.randomSeed * Math.PI;
