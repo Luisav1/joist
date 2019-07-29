@@ -41,6 +41,7 @@ define( function( require ) {
   var NumberProperty = require( 'AXON/NumberProperty' );
   var ObservableArray = require( 'AXON/ObservableArray' );
   var PanZoomListener = require( 'SCENERY/listeners/PanZoomListener' );
+  var PanZoomOverlay = require( 'JOIST/PanZoomOverlay' );
   var packageJSON = require( 'JOIST/packageJSON' );
   var platform = require( 'PHET_CORE/platform' );
   var Profiler = require( 'JOIST/Profiler' );
@@ -146,6 +147,8 @@ define( function( require ) {
       this.simulationRoot.setRect( 0, 0, width, height );
       this.panZoomListener.targetBounds = this.boundsProperty.value;
       this.panZoomListener.panBounds = this.boundsProperty.value;
+
+      this.panZoomOverlay.resize( scale );
     }, {
       tandem: Tandem.generalTandem.createTandem( 'resizedAction' ),
       phetioType: ActionIO( [
@@ -531,6 +534,10 @@ define( function( require ) {
     // @private
     this.panZoomListener = new PanZoomListener( this.simulationRoot, Bounds2.EVERYTHING );
     this.simulationRoot.addInputListener( this.panZoomListener );
+
+    // @private
+    this.panZoomOverlay = new PanZoomOverlay( this.display, this.panZoomListener );
+    this.display.addOverlay( this.panZoomOverlay );
 
     // Seeding by default a random value for reproducable fuzzes if desired
     var fuzzerSeed = phet.chipper.queryParameters.randomSeed * Math.PI;

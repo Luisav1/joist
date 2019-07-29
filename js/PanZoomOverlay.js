@@ -1,137 +1,131 @@
 // Copyright 2019, University of Colorado Boulder
 
 /**
- * A prototype overlay with scroll bars and UI buttons that allow one to zoom in to a Node with a panZoomListener.
- * Prototypal, do not use this. For https://github.com/phetsims/joist/issues/563
- * 
+ * A prototype overlay that implements panning by placing mouce at edges of the screen.
+ * This is a prototype, do not use this in any production code. For https://github.com/phetsims/joist/issues/563.
+ *
+ * Note that this is implemented with update, so we need to the overlay needs to be updated every animation frame
+ * for this feature to work properly.
+ *
  * @author Jesse Greenberg
  */
 define( function( require ) {
   'use strict';
 
   // modules
-  const DerivedProperty = require( 'AXON/DerivedProperty' );
+  const Display = require( 'SCENERY/display/Display' );
   const joist = require( 'JOIST/joist' );
   const Rectangle = require( 'SCENERY/nodes/Rectangle' );
-  const Panel = require( 'SUN/Panel' );
-  const Property = require( 'AXON/Property' );
-  const PhetColorScheme = require( 'SCENERY_PHET/PhetColorScheme' );
+  const Vector2 = require( 'DOT/Vector2' );
   const Node = require( 'SCENERY/nodes/Node' );
-  const HBox = require( 'SCENERY/nodes/HBox' );
-  const ResetButton = require( 'SCENERY_PHET/buttons/ResetButton' );
-  const ZoomButton = require( 'SCENERY_PHET/buttons/ZoomButton' );
 
   // constants
-  const BAR_WIDTH = 25; 
+  const BAR_WIDTH = 40;
 
-  class PanZoomOverlay extends Node {
-    constructor( panZoomListener, boundsProperty ) {
-      super();
+  class PanZoomOverlay extends Display {
 
-      const trackOptions = {
-        stroke: PhetColorScheme.PHET_LOGO_BLUE,
-        lineWidth: 2
-      };
+    /**
+     * @param {Display} parentDisplay - the Display this overlay will be attached to (for resizing)
+     * @param {} panZoomListener - the listener responsible for pan/zoom operations
+     */
+    constructor( parentDisplay, panZoomListener ) {
+      const panZoomRoot = new Node();
 
-      const barOptions = {
-        fill: PhetColorScheme.PHET_LOGO_YELLOW
-      };
-
-      this.horizontalScrollBarTrack = new Rectangle( 0, 0, 0, 0, trackOptions );
-      this.horizontalScrollBar = new Rectangle( 0, 0, 0, 0, barOptions );
-
-      this.verticalScrollBarTrack = new Rectangle( 0, 0, 0, 0, trackOptions );
-      this.verticalScrollBar = new Rectangle( 0, 0, 0, 0, barOptions );
-
-      const trackConnector = new Rectangle( 0, 0, BAR_WIDTH, BAR_WIDTH, {
-        fill: PhetColorScheme.PHET_LOGO_BLUE
+      super( panZoomRoot, {
+        accessibility: false
       } );
 
-      this.addChild( this.horizontalScrollBarTrack );
-      this.addChild( this.horizontalScrollBar );
+      // @private
+      this.parentDisplay = parentDisplay;
+      this.panZoomListener = panZoomListener;
 
-      this.addChild( this.verticalScrollBarTrack );
-      this.addChild( this.verticalScrollBar );
+      // invisible rectangles for the border of the display -
+      this.leftRectangle = new Rectangle( 0, 0, 0, 0 );
+      this.rightRectangle = new Rectangle( 0, 0, 0, 0 );
+      this.topRectangle = new Rectangle( 0, 0, 0, 0 );
+      this.bottomRectangle = new Rectangle( 0, 0, 0, 0 );
 
-      this.addChild( trackConnector );
+      // @private {boolean} - whether a pointer ois over each of the rectangles on the overlay
+      this.overLeft = false;
+      this.overRight = false;
+      this.overTop = false;
+      this.overBottom = false;
 
-      this.controlsVisibleProperty = new DerivedProperty( [ panZoomListener.magnificationProperty ], ( magnification ) => {
-        return magnification > 1;
-      } );
+      this.leftRectangle.addInputListener( this.createPanDeltaListener( 'overLeft' ) );
+      this.rightRectangle.addInputListener( this.createPanDeltaListener( 'overRight' ) );
+      this.topRectangle.addInputListener( this.createPanDeltaListener( 'overTop' ) );
+      this.bottomRectangle.addInputListener( this.createPanDeltaListener( 'overBottom' ) );
 
-      Property.multilink( [ boundsProperty, panZoomListener.horizontalScrollProperty, panZoomListener.relativeWidthVisibleProperty ], ( bounds, scroll, relativeWidth ) => {
-        if ( bounds !== null ) {
-          this.horizontalScrollBarTrack.setRect( 0, bounds.height - BAR_WIDTH, bounds.width - BAR_WIDTH, BAR_WIDTH );
-          trackConnector.leftCenter = this.horizontalScrollBarTrack.rightCenter;
+      const rectangles = [ this.leftRectangle, this.rightRectangle, this.topRectangle, this.bottomRectangle ];
+      panZoomRoot.children = rectangles;
 
-          const horizontalBarWidth = this.horizontalScrollBarTrack.getWidth() * relativeWidth;
-          this.horizontalScrollBar.setRect( 0, 0, horizontalBarWidth, BAR_WIDTH );
-
-          this.horizontalScrollBar.left = ( this.horizontalScrollBarTrack.getWidth() - this.horizontalScrollBar.getWidth() ) * scroll;
-          this.horizontalScrollBar.bottom = this.horizontalScrollBarTrack.bottom;
-        }
-      } );
-
-      Property.multilink( [ boundsProperty, panZoomListener.verticalScrollProperty, panZoomListener.relativeHeightVisibleProperty ], ( bounds, scroll, relativeHeight ) => {
-        if ( bounds !== null ) {
-          this.verticalScrollBarTrack.setRect( bounds.width - BAR_WIDTH, 0, BAR_WIDTH, bounds.height - BAR_WIDTH );
-          trackConnector.centerTop = this.verticalScrollBarTrack.centerBottom;
-
-          const verticalBarHeight = this.verticalScrollBarTrack.getHeight() * relativeHeight;
-          this.verticalScrollBar.setRect( 0, 0, BAR_WIDTH, verticalBarHeight );
-
-          this.verticalScrollBar.top = ( this.verticalScrollBarTrack.getHeight() - this.verticalScrollBar.getHeight() ) * scroll;
-          this.verticalScrollBar.right = this.verticalScrollBarTrack.right;
-        }
-      } );
-
-      this.controlsVisibleProperty.link( ( controlsVisible ) => {
-        this.visible = controlsVisible;
-      } );
-
-      // button panel
-      const zoomInButton = new ZoomButton( {
-        listener: () => {
-          const globalPoint = panZoomListener.transformedPanBoundsProperty.get().center;
-          const scale = 1.1;
-          panZoomListener.repositionCustom( globalPoint, scale );
-        }
-      } );
-      const zoomOutButton = new ZoomButton( {
-        in: false,
-        listener: () => {
-          const globalPoint = panZoomListener.transformedPanBoundsProperty.get().center;
-          const scale = 0.9;
-          panZoomListener.repositionCustom( globalPoint, scale );
-        }
-      } );
-      const resetButton = new ResetButton( {
-        baseColor: PhetColorScheme.PHET_LOGO_BLUE,
-        listener: () => {
-          panZoomListener.resetTransform();
-        }
-      } );
-
-      const zoomBox = new HBox( { children: [ zoomInButton, zoomOutButton ], spacing: 15 } );
-      const buttonsBox = new HBox( { children: [ zoomBox, resetButton ], spacing: 90 } );
-
-      const buttonsPanel = new Panel( buttonsBox, {
-        fill: 'black',
-        stroke: PhetColorScheme.PHET_LOGO_BLUE,
-        xMargin: 15,
-        yMargin: 15
-      } );
-      this.addChild( buttonsPanel );
-
-      boundsProperty.link( ( bounds ) => {
-        if ( bounds !== null ) {
-          buttonsPanel.centerTop = bounds.centerTop;
-        }
-      } );
+      this.initializeEvents();
     }
 
-    update() {
+    /**
+     * Create a listener that will set the provided field when a pointer goes over/out
+     * of the Rectangle on this overlay.
+     * @param   {string} field - 'overLeft' || 'overRight' || 'overTop' || 'overBottom'
+     * @returns {over: function, out: function} - for the scenery listener API
+     */
+    createPanDeltaListener( field ) {
+      assert && assert( typeof field === 'string' );
+      assert && assert( typeof this[ field ] === 'boolean', field + ' property not assigned to PanZoomOverlay' );
 
+      return {
+        over: () => { this[ field ] = true; },
+        out: () => { this[ field ] = false; }
+      };
+    }
+
+    /**
+     * Update the display size if the parent display has also changed size. Also triggers panning from hover over
+     * the border rectangles on this overlay.
+     *
+     * @public (scenery-internal)
+     */
+    update() {
+      if ( !this.parentDisplay.size.equals( this.size ) ) {
+        this.setWidthHeight( this.parentDisplay.width, this.parentDisplay.height );
+      }
+
+      let deltaX = 0;
+      let deltaY = 0;
+      const deltaSize = 20;
+      if ( this.overLeft ) {
+        deltaX = -deltaSize;
+      }
+      if ( this.overRight ) {
+        deltaX = deltaSize;
+      }
+      if ( this.overTop ) {
+        deltaY = -deltaSize;
+      }
+      if ( this.overBottom ) {
+        deltaY = deltaSize;
+      }
+
+      this.panZoomListener.panDelta( new Vector2( deltaX, deltaY ) );
+      this.updateDisplay();
+    }
+
+    /**
+   * Resize the overlay so that the panning rectangles run along the bounds of the viewport, but do not change size
+     * with window scale (like when zooming in natively with a browser).
+     * @public
+     *
+     * @param   {number} scale
+     */
+    resize( scale ) {
+      const width = this.parentDisplay.width;
+      const height = this.parentDisplay.height;
+      const rectWidth = BAR_WIDTH * scale;
+      this.leftRectangle.setRect( 0, 0, rectWidth, height );
+      this.rightRectangle.setRect( width - rectWidth, 0, rectWidth, height );
+      this.topRectangle.setRect( 0, 0, width, rectWidth );
+      this.bottomRectangle.setRect( 0, height - rectWidth, width, rectWidth  );
+
+      this.updateDisplay();
     }
   }
 
