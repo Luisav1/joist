@@ -133,8 +133,12 @@ define( function( require ) {
       self.topLayer.setScaleMagnitude( scale );
       self.homeScreen && self.homeScreen.view.layout( width, screenHeight );
 
-      // Fixes problems where the div would be way off center on iOS7
-      if ( platform.mobileSafari ) {
+      // Fixes problems where the div would be way off center on iOS7, and if zooming in natively, this will restore
+      // sim to take up full window on Safari
+      // TODO: The full bug is that if you zoom in natively on Safari then refresh, the window dimensions through
+      // window.innerWidth and window.innerHeight do not seem to be corrected for scale, so appliation
+      // sizing to window is broken and you can scroll outside of the sim.
+      if ( platform.safari ) {
         window.scrollTo( 0, 0 );
       }
 
