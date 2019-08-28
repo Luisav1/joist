@@ -40,8 +40,7 @@ define( function( require ) {
   var NumberIO = require( 'TANDEM/types/NumberIO' );
   var NumberProperty = require( 'AXON/NumberProperty' );
   var ObservableArray = require( 'AXON/ObservableArray' );
-  var PanZoomListener = require( 'SCENERY/listeners/PanZoomListener' );
-  var PanZoomOverlay = require( 'JOIST/PanZoomOverlay' );
+  var MultiPanZoomListener = require( 'SCENERY/listeners/MultiPanZoomListener' );
   var packageJSON = require( 'JOIST/packageJSON' );
   var platform = require( 'PHET_CORE/platform' );
   var Profiler = require( 'JOIST/Profiler' );
@@ -135,7 +134,7 @@ define( function( require ) {
 
       // Fixes problems where the div would be way off center on iOS7, and if zooming in natively, this will restore
       // sim to take up full window on Safari
-      // TODO: The full bug is that if you zoom in natively on Safari then refresh, the window dimensions through
+      // NOTE: The full bug is that if you zoom in natively on Safari then refresh, the window dimensions through
       // window.innerWidth and window.innerHeight do not seem to be corrected for scale, so appliation
       // sizing to window is broken and you can scroll outside of the sim.
       if ( platform.safari ) {
@@ -151,8 +150,6 @@ define( function( require ) {
       this.simulationRoot.setRect( 0, 0, width, height );
       this.panZoomListener.targetBounds = this.boundsProperty.value;
       this.panZoomListener.panBounds = this.boundsProperty.value;
-
-      this.panZoomOverlay.resize( scale );
     }, {
       tandem: Tandem.generalTandem.createTandem( 'resizedAction' ),
       phetioType: ActionIO( [
@@ -239,6 +236,8 @@ define( function( require ) {
       if ( window.TWEEN ) {
         window.TWEEN.update( phet.joist.elapsedTime );
       }
+
+      this.panZoomListener.step( dt );
 
       // View step is the last thing before updateDisplay(), so we can do paint updates there.
       // See https://github.com/phetsims/joist/issues/401.
@@ -536,12 +535,8 @@ define( function( require ) {
     } );
 
     // @private
-    this.panZoomListener = new PanZoomListener( this.simulationRoot, Bounds2.EVERYTHING );
+    this.panZoomListener = new MultiPanZoomListener( this.simulationRoot, Display.keyStateTracker, Bounds2.EVERYTHING );
     this.simulationRoot.addInputListener( this.panZoomListener );
-
-    // @private
-    this.panZoomOverlay = new PanZoomOverlay( this.display, this.panZoomListener );
-    this.display.addOverlay( this.panZoomOverlay );
 
     // Seeding by default a random value for reproducable fuzzes if desired
     var fuzzerSeed = phet.chipper.queryParameters.randomSeed * Math.PI;
