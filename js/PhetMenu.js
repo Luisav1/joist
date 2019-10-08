@@ -26,6 +26,7 @@ define( function( require ) {
   var PhetFont = require( 'SCENERY_PHET/PhetFont' );
   var PhetMenuIO = require( 'JOIST/PhetMenuIO' );
   var platform = require( 'PHET_CORE/platform' );
+  var Pointer = require( 'SCENERY/input/Pointer' );
   var Rectangle = require( 'SCENERY/nodes/Rectangle' );
   var ScreenshotGenerator = require( 'JOIST/ScreenshotGenerator' );
   var Shape = require( 'KITE/Shape' );
@@ -406,6 +407,10 @@ define( function( require ) {
     // When using the arrow keys, we prevent the virtual cursor from moving in VoiceOver
     var keydownListener = {
       keydown: function( event ) {
+
+        // mark the pointer to indicate that we want to prevent movement here
+        event.pointer.setIntent( Pointer.Intent.KEYBOARD_DRAG );
+
         var domEvent = event.domEvent;
 
         var firstItem = self.items[ 0 ];
