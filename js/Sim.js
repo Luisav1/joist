@@ -147,7 +147,6 @@ define( function( require ) {
       this.screenBoundsProperty.value = new Bounds2( 0, 0, width, screenHeight );
 
       // set the background rectangle dimensions that will catch pan/zoom input
-      this.simulationRoot.setRect( 0, 0, width, height );
       this.panZoomListener.targetBounds = this.boundsProperty.value;
       this.panZoomListener.panBounds = this.boundsProperty.value;
     }, {
@@ -515,9 +514,10 @@ define( function( require ) {
     // @public - root for the sim Display
     this.rootNode = new Node( { renderer: options.rootRenderer } );
 
-    // root for the simulation Nodes, a rectangle that is sized on resize() to fill the entire display and capture
-    // pan/zoom input events
-    this.simulationRoot = new phet.scenery.Rectangle(0, 0, 0, 0 );
+    // Root for the simulation Nodes and the target for the MultiListener to support magnification since the Display
+    // root cannot be transformed. The target cannot be transformed. A Plane so that all pinch/zoom gestures
+    // can be caught by this Node.
+    this.simulationRoot = new phet.scenery.Plane();
     this.rootNode.addChild( this.simulationRoot );
 
     // @private
