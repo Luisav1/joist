@@ -25,7 +25,6 @@ define( require => {
   // images
   const brightIconMipmap = require( 'mipmap!JOIST/keyboard-icon.png' ); // on a black navbar
   const darkIconMipmap = require( 'mipmap!JOIST/keyboard-icon-on-white.png' ); // on a white navbar
-  assert && assert( Array.isArray( brightIconMipmap ), 'icon must be a mipmap' );
 
   // a11y strings
   const hotKeysAndHelpString = JoistA11yStrings.hotKeysAndHelp.value;
@@ -33,7 +32,7 @@ define( require => {
   // constants
   const HELP_BUTTON_HEIGHT = 67;
   const HELP_BUTTON_SCALE = 0.30;  // scale applied to the icon
-  const BUTTON_SCALE = HELP_BUTTON_SCALE / brightIconMipmap[ 0 ].height * HELP_BUTTON_HEIGHT;
+  const BUTTON_SCALE = HELP_BUTTON_SCALE / brightIconMipmap.naturalHeight * HELP_BUTTON_HEIGHT;
 
   /**
    * @param {Node} helpContent - content for the KeyboardHelpDialog
