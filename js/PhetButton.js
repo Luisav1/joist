@@ -40,7 +40,6 @@ define( require => {
   // height of the PhET logo, brand/phet/images/logo.png or brand/adapted-from-phet/images/logo.png
   const PHET_LOGO_HEIGHT = 108;
   const PHET_LOGO_SCALE = 0.28;  // scale applied to the PhET logo
-  const LOGO_SCALE = PHET_LOGO_SCALE / brightLogoMipmap.naturalHeight * PHET_LOGO_HEIGHT;
 
   /**
    * @param {Sim} sim
@@ -67,6 +66,8 @@ define( require => {
           phetMenu.bottom = screenBounds.bottom / scale + navBarHeight / 2 / scale;
         }
       } );
+
+    const LOGO_SCALE = PHET_LOGO_SCALE / brightLogoMipmap.height * PHET_LOGO_HEIGHT;
 
     // PhET logo
     const logoImage = new Image( brightLogoMipmap, {
