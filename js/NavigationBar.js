@@ -28,7 +28,7 @@ import Dimension2 from '../../dot/js/Dimension2.js';
 import inherit from '../../phet-core/js/inherit.js';
 import StringUtils from '../../phetcommon/js/util/StringUtils.js';
 import PhetFont from '../../scenery-phet/js/PhetFont.js';
-import AccessiblePeer from '../../scenery/js/accessibility/AccessiblePeer.js';
+import PDOMPeer from '../../scenery/js/accessibility/pdom/PDOMPeer.js';
 import Node from '../../scenery/js/nodes/Node.js';
 import Rectangle from '../../scenery/js/nodes/Rectangle.js';
 import Text from '../../scenery/js/nodes/Text.js';
@@ -43,7 +43,6 @@ import PhetButton from './PhetButton.js';
 
 const simTitleWithScreenNamePatternString = joistStrings.simTitleWithScreenNamePattern;
 
-// a11y strings
 const simScreensResourcesAndToolsString = joistStrings.a11y.simScreensResourcesAndTools;
 const simResourcesAndToolsString = joistStrings.a11y.simResourcesAndTools;
 const simScreensString = joistStrings.a11y.simScreens;
@@ -82,7 +81,7 @@ function NavigationBar( sim, isMultiScreenSimDisplayingSingleScreen, tandem ) {
 
   Node.call( this, {
 
-    // a11y
+    // pdom
     tagName: 'div',
     ariaRole: 'region',
     labelTagName: 'h2',
@@ -119,10 +118,10 @@ function NavigationBar( sim, isMultiScreenSimDisplayingSingleScreen, tandem ) {
   let title = sim.name;
 
   // If the 'screens' query parameter only selects 1 screen, than update the nav bar title to include that screen name.
-  if ( isMultiScreenSimDisplayingSingleScreen && this.simScreens[ 0 ].name ) {
+  if ( isMultiScreenSimDisplayingSingleScreen && this.simScreens[ 0 ].nameProperty.value ) {
     title = StringUtils.fillIn( simTitleWithScreenNamePatternString, {
       simName: sim.name,
-      screenName: this.simScreens[ 0 ].name
+      screenName: this.simScreens[ 0 ].nameProperty.value
     } );
   }
 
@@ -130,7 +129,7 @@ function NavigationBar( sim, isMultiScreenSimDisplayingSingleScreen, tandem ) {
   this.titleTextNode = new Text( title, {
     font: new PhetFont( 16 ),
     fill: sim.lookAndFeel.navigationBarTextFillProperty,
-    tandem: tandem.createTandem( 'titleTextNode' ),
+    tandem: tandem.createTandem( 'titleText' ),
     phetioDocumentation: 'Displays the title of the simulation in the navigation bar (bottom left)',
     phetioComponentOptions: {
       visibleProperty: { phetioFeatured: true },
@@ -156,11 +155,11 @@ function NavigationBar( sim, isMultiScreenSimDisplayingSingleScreen, tandem ) {
   );
   this.barContents.addChild( this.a11yButtonsHBox );
 
-  // a11y - tell this node that it is aria-labelled by its own labelContent.
+  // pdom - tell this node that it is aria-labelled by its own labelContent.
   this.addAriaLabelledbyAssociation( {
-    thisElementName: AccessiblePeer.PRIMARY_SIBLING,
+    thisElementName: PDOMPeer.PRIMARY_SIBLING,
     otherNode: this,
-    otherElementName: AccessiblePeer.LABEL_SIBLING
+    otherElementName: PDOMPeer.LABEL_SIBLING
   } );
 
   if ( this.simScreens.length === 1 ) {
@@ -177,7 +176,7 @@ function NavigationBar( sim, isMultiScreenSimDisplayingSingleScreen, tandem ) {
     // Start with the assumption that the title can occupy (at most) this percentage of the bar.
     const maxTitleWidth = Math.min( this.titleTextNode.width, 0.20 * HomeScreenView.LAYOUT_BOUNDS.width );
 
-    // a11y - container for the homeButton and all the screen buttons.
+    // pdom - container for the homeButton and all the screen buttons.
     var buttons = new Node( {
       tagName: 'nav',
       ariaLabel: simScreensString
@@ -284,7 +283,7 @@ function NavigationBar( sim, isMultiScreenSimDisplayingSingleScreen, tandem ) {
 
   this.layout( 1, NAVIGATION_BAR_SIZE.width, NAVIGATION_BAR_SIZE.height );
 
-  // a11y - keyboard help button before phet menu button, but only if it exists
+  // pdom - keyboard help button before phet menu button, but only if it exists
   this.accessibleOrder = [
     buttons,
     this.a11yButtonsHBox,
