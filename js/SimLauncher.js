@@ -31,7 +31,7 @@ const SimLauncher = {
   launch: function( callback ) {
     assert && assert( !window.phet.launchCalled, 'Tried to launch twice' );
 
-    //Signify that the SimLauncher was called, see https://github.com/phetsims/joist/issues/142
+    // Signify that the SimLauncher was called, see https://github.com/phetsims/joist/issues/142
     window.phet.joist.launchCalled = true;
     let launchComplete = false;
 
@@ -87,7 +87,8 @@ const SimLauncher = {
   },
 
   /**
-   * Creates a lock, which returns a callback that needs to be run before the launch sequence will continue to the
+   * Creates a lock on the simulation launch process, which returns a callback that needs to be run before the launch
+   * sequence will continue to the
    * next phase.
    * @public
    *
